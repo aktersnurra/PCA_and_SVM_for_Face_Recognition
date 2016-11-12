@@ -30,6 +30,9 @@ first_face = face_vectors[:, 420]
 len_img = len(first_face)
 
 img = Image.fromarray(first_face.reshape((46, 56)).transpose())
-img.save('my.png')
 img.show()
+
+#class Eigenfaces(object):
+
+#    def __init__(self):
 
