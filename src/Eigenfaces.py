@@ -1,10 +1,9 @@
 from __future__ import division
-import matplotlib
-from lib.libsvm.python.svmutil import *
-import scipy.io as sio
 from PIL import Image
-from scipy.misc import imshow
 import numpy as np
+import matplotlib.pyplot as plt
+from numpy import linalg as LA
+
 from FaceData import FaceData
 
 
@@ -34,12 +33,13 @@ for i in range(100,110):
 
 class EigenFaces(object):
 
-    def __init__(self, face_data):
-        self.face_data = face_data
+    def __init__(self):
+        self.face_data = FaceData()
         self.labeled_faces, self.training_data, self.test_data = self.face_data()
         self.x_bar = np.zeros(len(self.training_data[0][1]))
         self.N = len(self.training_data)
         self.D = len(self.training_data[0][1])
+        self.S = []
 
     def printdata(self):
         print str(len(self.training_data)) + ' ' + str(len(self.test_data))
@@ -84,14 +84,27 @@ class EigenFaces(object):
             counter += 1
 
         AT = A.transpose()
-        S = 1 / self.N * np.dot(A, AT)
-        print S.shape
+        self.S = 1 / self.N * np.dot(A, AT)
+        #print self.S.shape
+
+    def compute_eigenvectors(self):
+        eig_values, eig_vectors = LA.eig(self.S)
+        M = np.array(np.arange(self.D))
+
+        real_eig_val = eig_values.real
+        real_eig_sorted = np.array(sorted(real_eig_val, reverse=True))
+
+        plt.plot(M, real_eig_sorted)
+        plt.ylim([0,real_eig_sorted[0]])
+        plt.xlim([0,self.D])
+        plt.show()
 
 
 
+def main():
+    eigenfaces = EigenFaces()
+    eigenfaces.compute_avg_face_vector()
+    eigenfaces.compute_covariance_matrix()
+    eigenfaces.compute_eigenvectors()
 
-face_data = FaceData()
-eigenfaces = EigenFaces(face_data)
-#eigenfaces.printdata()
-eigenfaces.compute_avg_face_vector()
-eigenfaces.compute_covariance_matrix()
+main()

@@ -33,7 +33,7 @@ class FaceData(object):
         check = range(1, 7)
         counter = 1
         start = 0
-        stop = len(self.labeled_faces) - 1
+        stop = len(self.labeled_faces)
         for i in range(start, stop):
             if counter in check:
                 self.training_data.append(self.labeled_faces[i])
