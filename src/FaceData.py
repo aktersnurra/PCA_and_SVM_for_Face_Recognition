@@ -30,7 +30,7 @@ class FaceData(object):
 
     def partition_data(self):
         '''Partition data into training and testing data. The data is divided 60/40.'''
-        check = range(1, 7)
+        check = range(1, 6)
         counter = 1
         start = 0
         stop = len(self.labeled_faces)
