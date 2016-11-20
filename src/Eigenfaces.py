@@ -36,9 +36,11 @@ class EigenFaces(object):
         self.A = np.zeros((self.D, self.N)).astype(float)
         self.eig_arr = []
         self.eig_values = []
-        self.M = 200                                                                #How many eigenvectors used for face reconstruction
+        self.M = 300                                                                #How many eigenvectors used for face reconstruction
         self.weight_matrix = []                                                     #Contains each weight array used for face reconstruction
-        self.face = 10
+        self.face = 0                                                               #Detirmines the face that will be reconstructed
+        self.arr_of_subspaces = [50, 100, 150, 200, 250, 289]
+        self.error_arr = []
         self.path_to_lib = '/Users/Gustaf/Dropbox KTH/Dropbox/KTH/Imperial College London/kurser/' \
                            'autumn/pattern recognition/cw/PCA and SVM for face recognition/lib/'
 
@@ -53,9 +55,11 @@ class EigenFaces(object):
         self.compute_eigenvectors()
         #self.display_eigenvalues()
         self.faces_onto_eigenfaces()
-        self.reconstruct_face()
+        #self.reconstruct_face()
         #self.save_faces()
-        self.compute_zero_eigenvalues()
+        self.compute_error()
+        self.display_error()
+        #self.compute_zero_eigenvalues()
 
     def compute_avg_face_vector(self):
         '''
@@ -132,10 +136,10 @@ class EigenFaces(object):
         plt.imshow(img, cmap='Greys_r')
         plt.axis('off')
         plt.savefig(self.path_to_lib + title)
-        #plt.show()
+        plt.show()
 
     def compute_zero_eigenvalues(self):
-        threshold = 1e-6
+        threshold = 1e-10
         counter = 0
         eig_zero_arr = []
         for eigenvalue in self.eig_values:
@@ -143,6 +147,30 @@ class EigenFaces(object):
                 eig_zero_arr.append(eigenvalue)
                 counter += 1
         print counter, eig_zero_arr
+
+    def compute_error(self):
+        original_face = np.copy(self.training_data[self.face].get_face_vector())
+        arr_of_rec_face = []
+
+        for subspace in self.arr_of_subspaces:
+            self.M = subspace
+            self.reconstruct_face()
+            arr_of_rec_face.append(np.copy(self.x_tilde))
+
+        for rec_face in arr_of_rec_face:
+            self.error_arr.append(LA.norm(original_face - rec_face))
+
+        print 'error', self.error_arr
+
+    def display_error(self):
+        title = self.path_to_lib + '/rec_error.pdf'
+        plt.stem(self.arr_of_subspaces[:], self.error_arr[:])
+        plt.ylim([self.error_arr[-1], self.error_arr[0]+16])
+        plt.xlim([self.arr_of_subspaces[0]-10, self.arr_of_subspaces[-1]+10])
+        plt.xlabel('Subspace dimension')
+        plt.ylabel('Error')
+        plt.savefig(title)
+        plt.show()
 
     def save_faces(self):
         '''
@@ -161,11 +189,11 @@ class EigenFaces(object):
         '''
         Plots eigenvalues vs dimension of the images.
         '''
-        title = self.path_to_lib + '/eigvalues_vs_dim.pdf'
+        title = self.path_to_lib + '/eigvalues_vs_dim_500zoom.pdf'
         plt.ticklabel_format(style='sci', axis='y', scilimits=(1, 3))
         plt.plot(np.array(np.arange(self.D)), self.eig_values[:])
         plt.ylim([self.eig_values[-1], self.eig_values[0]])
-        plt.xlim([0, self.D])
+        plt.xlim([0, 250])
         plt.xlabel('Dimension')
         plt.ylabel('Eigenvalue')
         plt.savefig(title)
