@@ -6,7 +6,8 @@ from Face import Face
 class ReadFaces(object):
 
     def __init__(self):
-        self.path_to_faces = '/Users/Gustaf/Dropbox KTH/Dropbox/KTH/Imperial College London/kurser/autumn/pattern recognition/cw/PCA and SVM for face recognition/lib/face.mat'
+        self.path_to_faces = '/Users/Gustaf/Dropbox KTH/Dropbox/KTH/Imperial College London/kurser/' \
+                             'autumn/pattern recognition/cw/PCA and SVM for face recognition/lib/face.mat'
         self.face_data = sio.loadmat(self.path_to_faces)
         self.face_labels = self.face_data['l']
         self.face_vectors = self.face_data['X']

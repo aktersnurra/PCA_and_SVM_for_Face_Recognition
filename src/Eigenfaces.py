@@ -26,38 +26,41 @@ respective measurements for your answers.
 class EigenFaces(object):
 
     def __init__(self):
-        self.face_data = ReadFaces()
-        self.labeled_faces, self.training_data, self.test_data = self.face_data()
-        self.D = self.labeled_faces[0].get_dimension()
+        self.face_data = ReadFaces()                                                #Object of class ReadFaces
+        self.labeled_faces, self.training_data, self.test_data = self.face_data()   #gets the usefull data from ReadFaces object
+        self.D = self.labeled_faces[0].get_dimension()                              #Set the dimension of the face vectors
         self.x_bar = np.zeros((self.D, 1)).astype(float)
-        self.N = len(self.training_data)
+        self.x_tilde = np.zeros((self.D, 1)).astype(float)
+        self.N = len(self.training_data)                                            #Sets number of faces in the used for training
         self.S = np.zeros((self.D, self.D)).astype(float)
         self.A = np.zeros((self.D, self.N)).astype(float)
         self.eig_arr = []
         self.eig_values = []
-        self.M = 200
-        self.w = []
+        self.M = 200                                                                #How many eigenvectors used for face reconstruction
+        self.weight_matrix = []                                                     #Contains each weight array used for face reconstruction
+        self.face = 10
+        self.path_to_lib = '/Users/Gustaf/Dropbox KTH/Dropbox/KTH/Imperial College London/kurser/' \
+                           'autumn/pattern recognition/cw/PCA and SVM for face recognition/lib/'
 
     def __call__(self):
+        '''
+        runs the methods it the class.
+        :return:
+        '''
         print 'Computing...'
         self.compute_avg_face_vector()
         self.compute_covariance_matrix()
         self.compute_eigenvectors()
-        self.display_eigenvalues()
+        #self.display_eigenvalues()
         self.faces_onto_eigenfaces()
         self.reconstruct_face()
-
-    def display_face(self, face_vector):
-        img = face_vector.reshape((46, 56)).transpose()
-        plt.imshow(img, cmap='Greys_r')
-        plt.show()
+        #self.save_faces()
+        self.compute_zero_eigenvalues()
 
     def compute_avg_face_vector(self):
         '''
-        compute the average face vector
-
+        compute the average face vector:
         x_bar = (1/N)sum_{n=1}^N
-
         '''
         x_sum = np.zeros((self.D, 1)).astype(float)
         for face in self.training_data:
@@ -67,18 +70,15 @@ class EigenFaces(object):
 
     def compute_covariance_matrix(self):
         '''
-        compute the covariance matrix S
-
+        compute the covariance matrix S:
         S = 1 / N AAT
-        where
 
+        where:
         phi_n = x_n - x_bar
 
-        and
-
+        and:
         A = [phi_1, ... , phi_n]
         '''
-
         counter = 0
         for face in self.training_data:
             x = face.get_face_vector()
@@ -97,51 +97,79 @@ class EigenFaces(object):
         for i in xrange(start, stop):
             self.eig_values.append(eig_values[i].real)
             self.eig_arr.append(EigenObject(eig_values[i].real, eig_matrix[:, i].real))
-        self.display_face(self.eig_arr[0].get_eigenvector())
+
+    def faces_onto_eigenfaces(self):
+        '''
+        Representing faces onto eigenfaces:
+        w_n = [a_n1, a_n2, ..., a_nM].t
+
+        where:
+        a_ni = phi_n^T*u_i, i = 1, ..., M
+        '''
+        phi = np.zeros((self.D, 1)).astype(float)
+        for k in xrange(0, self.N):
+            phi[:, 0] = self.A[:, k]
+            weight_array = np.zeros(self.M)
+            for i in xrange(0, self.M):
+                u = self.eig_arr[i].get_eigenvector()
+                phi_transpose = np.transpose(phi)
+                weight = phi_transpose.dot(u)
+                weight_array[i] = weight
+            self.weight_matrix.append(weight_array)
+
+    def reconstruct_face(self):
+        sum_eig_vectors = np.zeros((self.D, 1)).astype(float)
+        u = np.zeros((self.D, 1))
+        for i in xrange(0, self.M):
+            u[:, 0] = self.eig_arr[i].get_eigenvector()
+            a_ni = self.weight_matrix[self.face][i]
+            sum_eig_vectors += a_ni * u
+        self.x_tilde[:, 0] = self.x_bar[:, 0] + sum_eig_vectors[:, 0]
+
+    def display_face(self, face_vector, title):
+        img = face_vector.reshape((46, 56)).transpose()
+        plt.figure(figsize=(0.48, 0.58))
+        plt.imshow(img, cmap='Greys_r')
+        plt.axis('off')
+        plt.savefig(self.path_to_lib + title)
+        #plt.show()
+
+    def compute_zero_eigenvalues(self):
+        threshold = 1e-6
+        counter = 0
+        eig_zero_arr = []
+        for eigenvalue in self.eig_values:
+            if np.absolute(eigenvalue) < threshold:
+                eig_zero_arr.append(eigenvalue)
+                counter += 1
+        print counter, eig_zero_arr
+
+    def save_faces(self):
+        '''
+        Save each face to /lib as .pdf.
+        :return:
+        '''
+        self.display_face(self.x_bar, '/avg_face_vector.pdf')
+
+        for i in range(0, 5):
+            title = '/eig_face_vector' + str(i) + '.pdf'
+            self.display_face(self.eig_arr[i].get_eigenvector(), title)
+
+        self.display_face(self.x_tilde, 'reconstructed_face' + str(self.face) + '.pdf')
 
     def display_eigenvalues(self):
         '''
         Plots eigenvalues vs dimension of the images.
         '''
+        title = self.path_to_lib + '/eigvalues_vs_dim.pdf'
+        plt.ticklabel_format(style='sci', axis='y', scilimits=(1, 3))
         plt.plot(np.array(np.arange(self.D)), self.eig_values[:])
         plt.ylim([self.eig_values[-1], self.eig_values[0]])
         plt.xlim([0, self.D])
         plt.xlabel('Dimension')
         plt.ylabel('Eigenvalue')
+        plt.savefig(title)
         plt.show()
-
-    def faces_onto_eigenfaces(self):
-        '''
-        Representing faces onto eigenfaces
-
-        w_n = [a_n1, a_n2, ..., a_nM].t
-
-        where
-
-        a_ni = phi_n^T*u_i, i = 1, ..., M
-
-        '''
-        phi = np.zeros((self.D, 1)).astype(float)
-        for k in xrange(0, self.N):
-            phi[:, 0] = self.A[:, k]
-            w_n = np.zeros(self.M)
-            for i in xrange(0, self.M):
-                u = self.eig_arr[i].get_eigenvector()
-                phi_transpose = np.transpose(phi)
-                a_ni = phi_transpose.dot(u)
-                w_n[i] = a_ni
-            self.w.append(w_n)
-
-    def reconstruct_face(self):
-        sum_eig_vectors = np.zeros((self.D, 1)).astype(float)
-        x_tilde = np.zeros((self.D, 1)).astype(float)
-        u = np.zeros((self.D, 1))
-        for i in xrange(0, self.M):
-            u[:, 0] = self.eig_arr[i].get_eigenvector()
-            a_ni = self.w[0][i]
-            sum_eig_vectors += a_ni * u
-        x_tilde[:, 0] = self.x_bar[:, 0] + sum_eig_vectors[:, 0]
-        self.display_face(x_tilde)
 
 run = EigenFaces()
 run()
