@@ -49,8 +49,3 @@ class ReadFaces(object):
             if counter == 10:
                 counter = 1
 
-
-
-
-
-
